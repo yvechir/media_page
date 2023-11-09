@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * media_page.module
+ */
+
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\media\Entity\Media;
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function media_page_entity_extra_field_info() {
+  $extra = [];
+  $label = t('Related Blocks');
+  $description = t("Field with related blocks.");
+
+  // For image type.
+  $extra['media']['image']['display']['related_blocks'] = [
+    'label' => $label,
+    'description' => $description,
+    'weight' => 0,
+    'visible' => TRUE,
+  ];
+
+  // For audio type.
+  $extra['media']['audio']['display']['related_blocks'] = [
+    'label' => $label,
+    'description' => $description,
+    'weight' => 0,
+    'visible' => TRUE,
+  ];
+
+  // For remote_video type.
+  $extra['media']['remote_video']['display']['related_blocks'] = [
+    'label' => $label,
+    'description' => $description,
+    'weight' => 0,
+    'visible' => TRUE,
+  ];
+
+  // For document type.
+  $extra['media']['document']['display']['related_blocks'] = [
+    'label' => $label,
+    'description' => $description,
+    'weight' => 0,
+    'visible' => TRUE,
+  ];
+  $extra['media']['document']['display']['download'] = [
+    'label' => t('Download document component.'),
+    'description' => t('Field with document download link and markup.'),
+    'weight' => 0,
+    'visible' => TRUE,
+  ];
+
+  return $extra;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view().
+ */
+function media_page_media_view(array &$build, $entity, $display, $view_mode) {
+  if ($display->getComponent('related_blocks') && $view_mode == 'full') {
+    $render = NULL;
+
+    $view_builder = \Drupal::entityTypeManager()->getViewBuilder('paragraph');
+
+    // Paragraph type id which use field related experts.
+    $related_tags_paragraph_type = "related_tags";
+
+    // Paragraph type id which use field related experts.
+    $related_experts_paragraph_type = "related_profiles";
+
+    // Paragraph type id which use field related programs.
+    $related_programs_paragraph_type = "related_programs_initiatives";
+
+    $related_tags_conditions = [
+      !empty($entity->get('field_related_places')->getValue()),
+      !empty($entity->get('field_related_issues')->getValue()),
+      !empty($entity->get('field_related_capabilities')->getValue()),
+      !empty($entity->get('field_related_centers')->getValue()),
+    ];
+
+    if (in_array(TRUE, $related_tags_conditions, TRUE)) {
+      $paragraph = Paragraph::create([
+        'type' => $related_tags_paragraph_type,
+      ]);
+      $render[] = $view_builder->view($paragraph, 'default');
+    }
+
+    if (!empty($entity->get('field_related_experts')->getValue())) {
+      $paragraph = Paragraph::create([
+        'type' => $related_experts_paragraph_type,
+      ]);
+      $render[] = $view_builder->view($paragraph, 'default');
+    }
+
+    if (!empty($entity->get('field_related_programs')->getValue())) {
+      $paragraph = Paragraph::create([
+        'type' => $related_programs_paragraph_type,
+      ]);
+      $render[] = $view_builder->view($paragraph, 'default');
+    }
+
+    if ($render) {
+      $build['related_blocks'] = $render;
+    }
+  }
+  if ($display->getComponent('download') && $view_mode === 'full' && $entity instanceof Media && $entity->bundle() === 'document') {
+    $media_view_builder = \Drupal::entityTypeManager()->getViewBuilder('media');
+    $build['download_link'] = $media_view_builder->view($entity, 'download');
+  }
+}
